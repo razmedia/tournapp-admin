@@ -61,7 +61,7 @@ const emptyTournament: Tournament = {
 
 const classifications = ['Amateur', 'Professional', 'Junior', 'Senior'];
 const statuses = ['Upcoming', 'In Progress', 'Not Active', 'Ended'];
-const regions = ['North', 'South', 'Central'];
+const regions = ['North', 'South', 'Central', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'];
 
 export default function Tournaments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,6 +92,7 @@ export default function Tournaments() {
     region: [],
     location: []
   });
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(['North', 'South', 'Central']);
 
   const breadcrumbItems = [
     { label: 'Home', href: '/' },
@@ -257,6 +258,11 @@ export default function Tournaments() {
   const handleEdit = (tournament: Tournament) => {
     setEditingTournament(tournament);
     setNewTournament(tournament);
+    
+    // Extract the regions from the tournament's region_locations
+    const tournamentRegions = tournament.region_locations.map(rl => rl.region);
+    setSelectedRegions(tournamentRegions);
+    
     setIsModalOpen(true);
   };
 
@@ -358,6 +364,31 @@ export default function Tournaments() {
     }
   };
 
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const region = e.target.value;
+    
+    if (!selectedRegions.includes(region)) {
+      // Add the new region
+      setSelectedRegions(prev => [...prev, region]);
+      
+      // Update the tournament's region_locations
+      setNewTournament(prev => {
+        const newRegionLocations = [...prev.region_locations];
+        newRegionLocations.push({ region, locations: [''] });
+        return { ...prev, region_locations: newRegionLocations };
+      });
+    }
+  };
+
+  const removeRegion = (regionIndex: number) => {
+    setNewTournament(prev => {
+      const newRegionLocations = prev.region_locations.filter((_, idx) => idx !== regionIndex);
+      return { ...prev, region_locations: newRegionLocations };
+    });
+    
+    setSelectedRegions(prev => prev.filter((_, idx) => idx !== regionIndex));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -399,6 +430,7 @@ export default function Tournaments() {
       setIsModalOpen(false);
       setEditingTournament(null);
       setNewTournament(emptyTournament);
+      setSelectedRegions(['North', 'South', 'Central']);
       setTimeout(() => setSuccess(null), 3000);
     } catch (error: any) {
       console.error('Error saving tournament:', error);
@@ -455,6 +487,7 @@ export default function Tournaments() {
                 ...emptyTournament,
                 is_team_tournament: showTeamTournaments
               });
+              setSelectedRegions(['North', 'South', 'Central']);
               setIsModalOpen(true);
             }}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
@@ -763,22 +796,48 @@ export default function Tournaments() {
                       <div>
                         <div className="flex justify-between items-center mb-4">
                           <h4 className="text-lg font-medium text-gray-900">Locations by Region</h4>
-                          <button
-                            type="button"
-                            onClick={() => setIsLocationModalOpen(true)}
-                            className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add New Location
-                          </button>
+                          <div className="flex space-x-2">
+                            <div>
+                              <select
+                                value=""
+                                onChange={handleRegionChange}
+                                className="text-sm border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                              >
+                                <option value="" disabled>Add Region</option>
+                                {regions.filter(region => !selectedRegions.includes(region)).map(region => (
+                                  <option key={region} value={region}>{region}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsLocationModalOpen(true)}
+                              className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add New Location
+                            </button>
+                          </div>
                         </div>
                         
                         {newTournament.region_locations.map((regionLocation, regionIndex) => (
                           <div key={regionLocation.region} className="mb-6 p-4 border rounded-lg">
-                            <h5 className="font-medium text-gray-900 mb-3 flex items-center">
-                              <MapPin className="h-4 w-4 mr-1 text-gray-500" />
-                              {regionLocation.region} Region
-                            </h5>
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="font-medium text-gray-900 flex items-center">
+                                <MapPin className="h-4 w-4 mr-1 text-gray-500" />
+                                {regionLocation.region} Region
+                              </h5>
+                              {newTournament.region_locations.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeRegion(regionIndex)}
+                                  className="text-red-600 hover:text-red-800 text-sm flex items-center"
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Remove Region
+                                </button>
+                              )}
+                            </div>
                             {regionLocation.locations.map((location, locationIndex) => (
                               <div key={locationIndex} className="flex items-center gap-2 mb-2">
                                 <select
