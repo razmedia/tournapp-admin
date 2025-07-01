@@ -61,11 +61,6 @@ export interface AuthUser {
   profilePicture?: string;
 }
 
-export interface RegionLocation {
-  region: string;
-  locations: string[];
-}
-
 export interface Tournament {
   id: string;
   name: string;
@@ -80,11 +75,6 @@ export interface Tournament {
   classification?: string;
   participants?: Participant[];
   matches?: Match[];
-  // New tournament fields for enhanced structure
-  region_locations?: RegionLocation[];
-  is_team_tournament?: boolean;
-  start_date?: string;
-  end_date?: string;
 }
 
 export interface League {
@@ -189,12 +179,4 @@ export interface Campaign {
   clicks?: number;
   impressions?: number;
   lastUpdated?: string;
-}
-
-export interface Location {
-  id: string;
-  name: string;
-  address: string;
-  region: string;
-  active: boolean;
 }
