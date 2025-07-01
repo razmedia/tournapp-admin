@@ -61,7 +61,32 @@ const emptyTournament: Tournament = {
 
 const classifications = ['Amateur', 'Professional', 'Junior', 'Senior'];
 const statuses = ['Upcoming', 'In Progress', 'Not Active', 'Ended'];
-const regions = ['North', 'South', 'Central', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'];
+const regions = [
+  'North', 
+  'South', 
+  'Central', 
+  'East', 
+  'West', 
+  'Northeast', 
+  'Northwest', 
+  'Southeast', 
+  'Southwest',
+  'Northern Region',
+  'Southern Region',
+  'Eastern Region',
+  'Western Region',
+  'Central Region',
+  'Metropolitan',
+  'Suburban',
+  'Rural',
+  'Coastal',
+  'Mountain',
+  'Valley',
+  'Urban',
+  'Regional',
+  'National',
+  'International'
+];
 
 export default function Tournaments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
