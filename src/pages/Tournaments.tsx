@@ -130,6 +130,7 @@ export default function Tournaments() {
       setLocations(data || []);
     } catch (error: any) {
       console.error('Error fetching locations:', error);
+      setError(`Error fetching locations: ${error.message}`);
     }
   };
 
@@ -278,7 +279,12 @@ export default function Tournaments() {
     try {
       const { data, error } = await supabase
         .from('locations')
-        .insert([newLocationData])
+        .insert([{
+          name: newLocationData.name,
+          address: newLocationData.address,
+          region: newLocationData.region,
+          active: true
+        }])
         .select()
         .single();
 
@@ -443,61 +449,69 @@ export default function Tournaments() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTournaments.map((tournament) => (
-                    <tr key={tournament.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        <Link 
-                          to={tournament.is_team_tournament ? 
-                            `/tournaments/${encodeURIComponent(tournament.name)}/team` :
-                            `/tournaments/${encodeURIComponent(tournament.name)}`
-                          }
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {tournament.name}
-                        </Link>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tournament.classification}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <div>from {tournament.start_date}</div>
-                        <div>to {tournament.end_date}</div>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <select
-                          value={tournament.status}
-                          onChange={(e) => handleStatusChange(tournament.id!, e.target.value as Tournament['status'])}
-                          className={`rounded-full px-2 text-xs font-semibold leading-5 border-0 ${getStatusColor(tournament.status)}`}
-                        >
-                          <option value="Upcoming">Upcoming</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Not Active">Not Active</option>
-                          <option value="Ended">Ended</option>
-                        </select>
-                      </td>
-                      <td className="px-3 py-4 text-sm text-gray-500">
-                        {tournament.region_locations.map((rl) => (
-                          <div key={rl.region} className="whitespace-nowrap">{rl.region}</div>
-                        ))}
-                      </td>
-                      <td className="px-3 py-4 text-sm text-gray-500">
-                        {tournament.region_locations.map((rl) => (
-                          <div key={rl.region} className="whitespace-nowrap">
-                            {rl.locations.join(', ')}
-                          </div>
-                        ))}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {tournament.is_team_tournament ? 'Teams' : 'Individual'}
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button
-                          onClick={() => handleEdit(tournament)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Edit
-                        </button>
+                  {filteredTournaments.length > 0 ? (
+                    filteredTournaments.map((tournament) => (
+                      <tr key={tournament.id}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                          <Link 
+                            to={tournament.is_team_tournament ? 
+                              `/tournaments/${encodeURIComponent(tournament.name)}/team` :
+                              `/tournaments/${encodeURIComponent(tournament.name)}`
+                            }
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            {tournament.name}
+                          </Link>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tournament.classification}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <div>from {tournament.start_date}</div>
+                          <div>to {tournament.end_date}</div>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <select
+                            value={tournament.status}
+                            onChange={(e) => handleStatusChange(tournament.id!, e.target.value as Tournament['status'])}
+                            className={`rounded-full px-2 text-xs font-semibold leading-5 border-0 ${getStatusColor(tournament.status)}`}
+                          >
+                            <option value="Upcoming">Upcoming</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Active">Not Active</option>
+                            <option value="Ended">Ended</option>
+                          </select>
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          {tournament.region_locations.map((rl) => (
+                            <div key={rl.region} className="whitespace-nowrap">{rl.region}</div>
+                          ))}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          {tournament.region_locations.map((rl) => (
+                            <div key={rl.region} className="whitespace-nowrap">
+                              {rl.locations.join(', ')}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {tournament.is_team_tournament ? 'Teams' : 'Individual'}
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                          <button
+                            onClick={() => handleEdit(tournament)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No tournaments found. {showTeamTournaments ? 'Try switching to Individual tournaments or add a new Team tournament.' : 'Try switching to Team tournaments or add a new Individual tournament.'}
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
