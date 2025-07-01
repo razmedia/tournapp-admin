@@ -102,16 +102,32 @@ export default function Tournaments() {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Test Supabase connection first
+      const { data: testData, error: testError } = await supabase
+        .from('tournaments')
+        .select('count', { count: 'exact', head: true });
+
+      if (testError) {
+        console.error('Supabase connection test failed:', testError);
+        throw new Error(`Database connection failed: ${testError.message}`);
+      }
+
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tournaments:', error);
+        throw new Error(`Failed to fetch tournaments: ${error.message}`);
+      }
+      
       setTournaments(data || []);
     } catch (error: any) {
-      console.error('Error fetching tournaments:', error);
-      setError(error.message);
+      console.error('Error in fetchTournaments:', error);
+      setError(error.message || 'Failed to fetch tournaments. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -126,10 +142,14 @@ export default function Tournaments() {
         .order('region', { ascending: true })
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching locations:', error);
+        throw new Error(`Failed to fetch locations: ${error.message}`);
+      }
+      
       setLocations(data || []);
     } catch (error: any) {
-      console.error('Error fetching locations:', error);
+      console.error('Error in fetchLocations:', error);
       setError(`Error fetching locations: ${error.message}`);
     }
   };
