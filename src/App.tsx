@@ -12,6 +12,8 @@ import Login from './pages/Login';
 // Import pages
 import Dashboard from './pages/Dashboard';
 import Tournaments from './pages/Tournaments';
+import TournamentDashboard from './pages/TournamentDashboard';
+import TeamTournamentDashboard from './pages/TeamTournamentDashboard';
 import Leagues from './pages/Leagues';
 import Users from './pages/Users';
 import Clubs from './pages/Clubs';
@@ -53,6 +55,8 @@ function App() {
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/tournaments" element={<Tournaments />} />
+                            <Route path="/tournaments/:name" element={<TournamentDashboard />} />
+                            <Route path="/tournaments/:name/team" element={<TeamTournamentDashboard />} />
                             <Route path="/leagues" element={<Leagues />} />
                             <Route path="/users" element={<Users />} />
                             <Route path="/clubs" element={<Clubs />} />

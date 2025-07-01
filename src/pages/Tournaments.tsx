@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Switch, Dialog, Transition, Menu } from '@headlessui/react';
 import { supabase } from '../lib/supabase';
 import Breadcrumbs from './Breadcrumbs';
+import { Plus, Edit, Trash2, Filter, X, Check, Calendar, MapPin, Users, Trophy, Clock, Target, Award } from 'lucide-react';
 
 interface RegionLocation {
   region: string;
@@ -65,13 +66,16 @@ const regions = ['North', 'South', 'Central'];
 export default function Tournaments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showTeamTournaments, setShowTeamTournaments] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
+  const [deletingTournament, setDeletingTournament] = useState<Tournament | null>(null);
   const [newTournament, setNewTournament] = useState<Tournament>(emptyTournament);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [newLocationData, setNewLocationData] = useState({
     name: '',
     address: '',
@@ -196,7 +200,8 @@ export default function Tournaments() {
 
   const FilterDropdown = ({ title, options }: { title: string, options: string[] }) => (
     <Menu as="div" className="relative inline-block text-left">
-      <Menu.Button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+      <Menu.Button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center">
+        <Filter className="h-4 w-4 mr-2" />
         {title}
       </Menu.Button>
       <Menu.Items className="absolute z-10 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
@@ -239,6 +244,9 @@ export default function Tournaments() {
           ? { ...tournament, status: newStatus }
           : tournament
       ));
+      
+      setSuccess(`Tournament status updated to ${newStatus}`);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error: any) {
       console.error('Error updating tournament status:', error);
       setError(error.message);
@@ -249,6 +257,34 @@ export default function Tournaments() {
     setEditingTournament(tournament);
     setNewTournament(tournament);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = (tournament: Tournament) => {
+    setDeletingTournament(tournament);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingTournament) return;
+    
+    try {
+      const { error } = await supabase
+        .from('tournaments')
+        .delete()
+        .eq('id', deletingTournament.id);
+
+      if (error) throw error;
+
+      setTournaments(prev => prev.filter(t => t.id !== deletingTournament.id));
+      setSuccess(`Tournament "${deletingTournament.name}" has been deleted`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Error deleting tournament:', error);
+      setError(error.message);
+    } finally {
+      setIsDeleteModalOpen(false);
+      setDeletingTournament(null);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -313,6 +349,8 @@ export default function Tournaments() {
       setLocations(prev => [...prev, data]);
       setNewLocationData({ name: '', address: '', region: 'North' });
       setIsLocationModalOpen(false);
+      setSuccess(`Location "${newLocationData.name}" has been added`);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error: any) {
       console.error('Error adding location:', error);
       setError(error.message);
@@ -344,18 +382,23 @@ export default function Tournaments() {
           .eq('id', editingTournament.id);
 
         if (error) throw error;
+        
+        setSuccess(`Tournament "${tournamentData.name}" has been updated`);
       } else {
         const { error } = await supabase
           .from('tournaments')
           .insert([tournamentData]);
 
         if (error) throw error;
+        
+        setSuccess(`Tournament "${tournamentData.name}" has been created`);
       }
 
       await fetchTournaments();
       setIsModalOpen(false);
       setEditingTournament(null);
       setNewTournament(emptyTournament);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error: any) {
       console.error('Error saving tournament:', error);
       setError(error.message);
@@ -407,11 +450,15 @@ export default function Tournaments() {
             type="button"
             onClick={() => {
               setEditingTournament(null);
-              setNewTournament(emptyTournament);
+              setNewTournament({
+                ...emptyTournament,
+                is_team_tournament: showTeamTournaments
+              });
               setIsModalOpen(true);
             }}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
           >
+            <Plus className="h-4 w-4 mr-2" />
             Add Tournament
           </button>
         </div>
@@ -436,6 +483,27 @@ export default function Tournaments() {
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Check className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-800">{success}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setSuccess(null)}
+                className="inline-flex bg-green-50 rounded-md p-1.5 text-green-500 hover:bg-green-100"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -471,7 +539,7 @@ export default function Tournaments() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredTournaments.length > 0 ? (
                     filteredTournaments.map((tournament) => (
-                      <tr key={tournament.id}>
+                      <tr key={tournament.id} className="hover:bg-gray-50">
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                           <Link 
                             to={tournament.is_team_tournament ? 
@@ -485,14 +553,19 @@ export default function Tournaments() {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tournament.classification}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <div>from {tournament.start_date}</div>
-                          <div>to {tournament.end_date}</div>
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                            <div>
+                              <div>From: {new Date(tournament.start_date).toLocaleDateString()}</div>
+                              <div>To: {new Date(tournament.end_date).toLocaleDateString()}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           <select
                             value={tournament.status}
                             onChange={(e) => handleStatusChange(tournament.id!, e.target.value as Tournament['status'])}
-                            className={`rounded-full px-2 text-xs font-semibold leading-5 border-0 ${getStatusColor(tournament.status)}`}
+                            className={`rounded-full px-2 py-1 text-xs font-semibold leading-5 border-0 ${getStatusColor(tournament.status)}`}
                           >
                             <option value="Upcoming">Upcoming</option>
                             <option value="In Progress">In Progress</option>
@@ -502,7 +575,10 @@ export default function Tournaments() {
                         </td>
                         <td className="px-3 py-4 text-sm text-gray-500">
                           {tournament.region_locations.map((rl) => (
-                            <div key={rl.region} className="whitespace-nowrap">{rl.region}</div>
+                            <div key={rl.region} className="whitespace-nowrap flex items-center">
+                              <MapPin className="h-3 w-3 mr-1 text-gray-400" />
+                              {rl.region}
+                            </div>
                           ))}
                         </td>
                         <td className="px-3 py-4 text-sm text-gray-500">
@@ -513,15 +589,31 @@ export default function Tournaments() {
                           ))}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {tournament.is_team_tournament ? 'Teams' : 'Individual'}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            tournament.is_team_tournament 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {tournament.is_team_tournament ? 'Teams' : 'Individual'}
+                          </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <button
-                            onClick={() => handleEdit(tournament)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex space-x-2 justify-end">
+                            <button
+                              onClick={() => handleEdit(tournament)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(tournament)}
+                              className="text-red-600 hover:text-red-900 flex items-center"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -568,9 +660,19 @@ export default function Tournaments() {
                 <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 mb-4"
+                    className="text-lg font-medium leading-6 text-gray-900 mb-4 flex items-center"
                   >
-                    {editingTournament ? 'Edit Tournament' : 'Add New Tournament'}
+                    {editingTournament ? (
+                      <>
+                        <Edit className="h-5 w-5 mr-2 text-blue-600" />
+                        Edit Tournament
+                      </>
+                    ) : (
+                      <>
+                        <Trophy className="h-5 w-5 mr-2 text-blue-600" />
+                        Add New Tournament
+                      </>
+                    )}
                   </Dialog.Title>
                   <form onSubmit={handleSubmit}>
                     <div className="space-y-4">
@@ -663,15 +765,19 @@ export default function Tournaments() {
                           <button
                             type="button"
                             onClick={() => setIsLocationModalOpen(true)}
-                            className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                            className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center"
                           >
+                            <Plus className="h-4 w-4 mr-1" />
                             Add New Location
                           </button>
                         </div>
                         
                         {newTournament.region_locations.map((regionLocation, regionIndex) => (
                           <div key={regionLocation.region} className="mb-6 p-4 border rounded-lg">
-                            <h5 className="font-medium text-gray-900 mb-3">{regionLocation.region} Region</h5>
+                            <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+                              <MapPin className="h-4 w-4 mr-1 text-gray-500" />
+                              {regionLocation.region} Region
+                            </h5>
                             {regionLocation.locations.map((location, locationIndex) => (
                               <div key={locationIndex} className="flex items-center gap-2 mb-2">
                                 <select
@@ -694,7 +800,7 @@ export default function Tournaments() {
                                     onClick={() => removeLocationField(regionIndex, locationIndex)}
                                     className="text-red-600 hover:text-red-800"
                                   >
-                                    Remove
+                                    <X className="h-4 w-4" />
                                   </button>
                                 )}
                               </div>
@@ -702,9 +808,10 @@ export default function Tournaments() {
                             <button
                               type="button"
                               onClick={() => addLocationField(regionIndex)}
-                              className="text-sm text-blue-600 hover:text-blue-800"
+                              className="text-sm text-blue-600 hover:text-blue-800 flex items-center mt-2"
                             >
-                              + Add another location
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add another location
                             </button>
                           </div>
                         ))}
@@ -720,8 +827,9 @@ export default function Tournaments() {
                         </button>
                         <button
                           type="submit"
-                          className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                          className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 flex items-center"
                         >
+                          <Check className="h-4 w-4 mr-2" />
                           {editingTournament ? 'Save Changes' : 'Add Tournament'}
                         </button>
                       </div>
@@ -763,8 +871,9 @@ export default function Tournaments() {
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 mb-4"
+                    className="text-lg font-medium leading-6 text-gray-900 mb-4 flex items-center"
                   >
+                    <MapPin className="h-5 w-5 mr-2 text-green-600" />
                     Add New Location
                   </Dialog.Title>
                   <form onSubmit={handleAddNewLocation}>
@@ -814,13 +923,77 @@ export default function Tournaments() {
                         </button>
                         <button
                           type="submit"
-                          className="rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                          className="rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 flex items-center"
                         >
+                          <Check className="h-4 w-4 mr-2" />
                           Add Location
                         </button>
                       </div>
                     </div>
                   </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Confirmation Modal */}
+      <Transition appear show={isDeleteModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={() => setIsDeleteModalOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-red-600 mb-4 flex items-center"
+                  >
+                    <Trash2 className="h-5 w-5 mr-2" />
+                    Delete Tournament
+                  </Dialog.Title>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to delete the tournament "{deletingTournament?.name}"? This action cannot be undone.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsDeleteModalOpen(false)}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDelete}
+                      className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </Dialog.Panel>
               </Transition.Child>
             </div>
