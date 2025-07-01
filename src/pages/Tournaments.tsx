@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Switch, Dialog, Transition, Menu } from '@headlessui/react';
 import { supabase } from '../lib/supabase';
 import Breadcrumbs from './Breadcrumbs';
-import { Plus, Edit, Trash2, Filter, X, Check, Calendar, MapPin, Users, Trophy, Clock, Target, Award } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, X, Check, Calendar, MapPin, Users, Trophy, Clock, Target, Award, ChevronDown } from 'lucide-react';
 
 interface RegionLocation {
   region: string;
@@ -203,6 +203,7 @@ export default function Tournaments() {
       <Menu.Button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center">
         <Filter className="h-4 w-4 mr-2" />
         {title}
+        <ChevronDown className="h-4 w-4 ml-2" />
       </Menu.Button>
       <Menu.Items className="absolute z-10 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
         <div className="py-1">
