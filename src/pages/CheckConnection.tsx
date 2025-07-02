@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, checkSupabaseConnection } from '../lib/supabase';
+import { supabase, checkSupabaseConnection, isSupabaseConfigured } from '../lib/supabase';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import { Database, CheckCircle, XCircle, RefreshCw, AlertTriangle, Server, Key } from 'lucide-react';
 
 export default function CheckConnection() {
-  const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [status, setStatus] = useState<'checking' | 'connected' | 'error' | 'not-configured'>('checking');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [locationCount, setLocationCount] = useState<number | null>(null);
   const [tournamentCount, setTournamentCount] = useState<number | null>(null);
@@ -19,6 +19,14 @@ export default function CheckConnection() {
     setStatus('checking');
     setErrorMessage(null);
     setIsLoading(true);
+    
+    // First check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setStatus('not-configured');
+      setErrorMessage('Supabase credentials are not properly configured');
+      setIsLoading(false);
+      return;
+    }
     
     try {
       // Test connection by fetching count of locations
@@ -51,6 +59,45 @@ export default function CheckConnection() {
     checkConnection();
   }, []);
 
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'checking':
+        return <RefreshCw className="h-6 w-6 animate-spin" />;
+      case 'connected':
+        return <CheckCircle className="h-6 w-6" />;
+      case 'not-configured':
+        return <AlertTriangle className="h-6 w-6" />;
+      default:
+        return <XCircle className="h-6 w-6" />;
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'checking':
+        return 'bg-yellow-100 text-yellow-600';
+      case 'connected':
+        return 'bg-green-100 text-green-600';
+      case 'not-configured':
+        return 'bg-orange-100 text-orange-600';
+      default:
+        return 'bg-red-100 text-red-600';
+    }
+  };
+
+  const getStatusTitle = () => {
+    switch (status) {
+      case 'checking':
+        return 'Checking connection...';
+      case 'connected':
+        return 'Connected to Supabase';
+      case 'not-configured':
+        return 'Supabase Not Configured';
+      default:
+        return 'Connection Error';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -61,27 +108,16 @@ export default function CheckConnection() {
       <Card>
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
-            <div className={`p-3 rounded-full ${
-              status === 'checking' ? 'bg-yellow-100 text-yellow-600' :
-              status === 'connected' ? 'bg-green-100 text-green-600' :
-              'bg-red-100 text-red-600'
-            }`}>
-              {status === 'checking' ? (
-                <RefreshCw className="h-6 w-6 animate-spin" />
-              ) : status === 'connected' ? (
-                <CheckCircle className="h-6 w-6" />
-              ) : (
-                <XCircle className="h-6 w-6" />
-              )}
+            <div className={`p-3 rounded-full ${getStatusColor()}`}>
+              {getStatusIcon()}
             </div>
             <div>
-              <h3 className="text-lg font-semibold">
-                {status === 'checking' ? 'Checking connection...' :
-                 status === 'connected' ? 'Connected to Supabase' :
-                 'Connection Error'}
-              </h3>
+              <h3 className="text-lg font-semibold">{getStatusTitle()}</h3>
               {status === 'connected' && (
                 <p className="text-sm text-success-600">Your Supabase connection is working properly!</p>
+              )}
+              {status === 'not-configured' && (
+                <p className="text-sm text-orange-600">Please configure your Supabase environment variables</p>
               )}
               {status === 'error' && errorMessage && (
                 <p className="text-sm text-danger-600">{errorMessage}</p>
@@ -139,13 +175,15 @@ export default function CheckConnection() {
             </div>
           </div>
 
-          {status === 'error' && (
+          {(status === 'error' || status === 'not-configured') && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-start space-x-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                 <div>
                   <h5 className="font-medium text-yellow-800">Troubleshooting Steps</h5>
                   <ul className="mt-2 space-y-1 text-sm text-yellow-700 list-disc list-inside">
+                    <li>Create a .env file in your project root if it doesn't exist</li>
+                    <li>Add your Supabase URL and anon key to the .env file</li>
                     <li>Check if your Supabase project is active and not paused</li>
                     <li>Verify that your environment variables are set correctly</li>
                     <li>Ensure your Supabase URL and anon key are valid</li>
@@ -168,6 +206,41 @@ export default function CheckConnection() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Test Connection Again
           </Button>
+        </div>
+      </Card>
+
+      {/* Environment Variables Setup Guide */}
+      <Card title="Setting Up Environment Variables">
+        <div className="space-y-4">
+          <p className="text-text-secondary">
+            To fix the connection issue, you need to set up your Supabase environment variables:
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-text-primary mb-2">For Local Development:</h4>
+              <ol className="space-y-2 list-decimal list-inside text-sm">
+                <li>Create a <code className="bg-gray-100 px-1 rounded">.env</code> file in your project root</li>
+                <li>Add the following variables:</li>
+              </ol>
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <pre className="text-sm font-mono">
+{`VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key`}
+                </pre>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-text-primary mb-2">Finding Your Supabase Credentials:</h4>
+              <ol className="space-y-1 list-decimal list-inside text-sm text-text-secondary">
+                <li>Go to your Supabase dashboard</li>
+                <li>Select your project</li>
+                <li>Navigate to Project Settings → API</li>
+                <li>Copy the "Project URL" and "anon/public" key</li>
+              </ol>
+            </div>
+          </div>
         </div>
       </Card>
 
