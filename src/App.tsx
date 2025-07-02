@@ -30,6 +30,7 @@ import Reports from './pages/Reports';
 import Publishing from './pages/Publishing';
 import Advertising from './pages/Advertising';
 import Profile from './pages/Profile';
+import CheckConnection from './pages/CheckConnection';
 
 function App() {
   return (
@@ -73,6 +74,7 @@ function App() {
                             <Route path="/publishing" element={<Publishing />} />
                             <Route path="/advertising" element={<Advertising />} />
                             <Route path="/profile" element={<Profile />} />
+                            <Route path="/check-connection" element={<CheckConnection />} />
                           </Routes>
                         </div>
                       </main>
