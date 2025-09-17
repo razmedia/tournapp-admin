@@ -166,6 +166,12 @@ export default function Tournaments() {
         return;
       }
 
+      // Check if Supabase is configured before attempting to fetch
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping location fetch');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('locations')
         .select('*')
@@ -181,7 +187,8 @@ export default function Tournaments() {
       setLocations(data || []);
     } catch (error: any) {
       console.error('Error in fetchLocations:', error);
-      setError(`Error fetching locations: ${error.message}`);
+      // Don't throw error for locations, just log it
+      console.warn('Could not fetch locations:', error.message);
     }
   };
 
