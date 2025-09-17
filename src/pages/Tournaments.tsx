@@ -1,7 +1,7 @@
 import React, { useState, Fragment, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Switch, Dialog, Transition, Menu } from '@headlessui/react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import Breadcrumbs from './Breadcrumbs';
 import { Plus, Edit, Trash2, Filter, X, Check, Calendar, MapPin, Users, Trophy, Clock, Target, Award, ChevronDown } from 'lucide-react';
 
@@ -134,14 +134,9 @@ export default function Tournaments() {
       setLoading(true);
       setError(null);
       
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await supabase
-        .from('tournaments')
-        .select('count', { count: 'exact', head: true });
-
-      if (testError) {
-        console.error('Supabase connection test failed:', testError);
-        throw new Error(`Database connection failed: ${testError.message}`);
+      // Check if Supabase is configured before attempting to fetch
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase is not configured. Please set up your environment variables.');
       }
 
       const { data, error } = await supabase
@@ -165,6 +160,12 @@ export default function Tournaments() {
 
   const fetchLocations = async () => {
     try {
+      // Check if Supabase is configured before attempting to fetch
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping location fetch');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('locations')
         .select('*')
